@@ -1,16 +1,16 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useSelector } from 'react-redux';
 
 const ProtectedRoute = ({ children, adminOnly = false }) => {
-  const { isAuthenticated, isAdmin } = useAuth();
+  const { isAuthenticated, user } = useSelector((state) => state.auth);
 
-  if (!isAuthenticated()) {
+  if (!isAuthenticated) {
     // User is not authenticated, redirect to login page
     return <Navigate to="/login" replace />;
   }
 
-  if (adminOnly && !isAdmin()) {
+  if (adminOnly && user?.role !== 'ADMIN') {
     // User is authenticated but not an admin, redirect to home or access denied page
     return <Navigate to="/" replace />;
   }
