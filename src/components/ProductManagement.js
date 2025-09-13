@@ -1,147 +1,153 @@
 import React, { useState, useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { getProductsStart, getProductsSuccess, getProductsFailure } from '../store/slices/productSlice';
 import axios from 'axios';
+import { 
+  Container, 
+  Typography, 
+  Button, 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableContainer, 
+  TableHead, 
+  TableRow, 
+  Paper, 
+  IconButton, 
+  Dialog, 
+  DialogActions, 
+  DialogContent, 
+  DialogTitle, 
+  TextField 
+} from '@mui/material';
+import { Edit, Delete } from '@mui/icons-material';
 
 const ProductManagement = () => {
-  const [products, setProducts] = useState([]);
-  const [newProduct, setNewProduct] = useState({
-    name: '',
-    description: '',
-    price: '',
-    quantity: '',
-  });
-  const [editingProduct, setEditingProduct] = useState(null);
-  const [error, setError] = useState(null);
+  const dispatch = useDispatch();
+  const { products, loading, error } = useSelector((state) => state.products);
+  const [open, setOpen] = useState(false);
+  const [currentProduct, setCurrentProduct] = useState(null);
 
   const PRODUCT_SERVICE_URL = process.env.REACT_APP_PRODUCT_SERVICE_URL || 'http://localhost:8082';
 
   const fetchProducts = async () => {
+    dispatch(getProductsStart());
     try {
       const response = await axios.get(`${PRODUCT_SERVICE_URL}/api/products`);
-      setProducts(response.data);
+      dispatch(getProductsSuccess(response.data));
     } catch (err) {
-      setError('Failed to fetch products.');
-      console.error('Error fetching products:', err);
+      dispatch(getProductsFailure('Failed to fetch products.'));
     }
   };
 
   useEffect(() => {
     fetchProducts();
-  }, []);
+  }, [dispatch]);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    if (editingProduct) {
-      setEditingProduct({ ...editingProduct, [name]: value });
-    } else {
-      setNewProduct({ ...newProduct, [name]: value });
-    }
+  const handleClickOpen = (product) => {
+    setCurrentProduct(product);
+    setOpen(true);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError(null);
-    try {
-      if (editingProduct) {
-        await axios.put(`${PRODUCT_SERVICE_URL}/api/products/${editingProduct.id}`, editingProduct);
-        setEditingProduct(null);
-      } else {
-        await axios.post(`${PRODUCT_SERVICE_URL}/api/products`, newProduct);
-        setNewProduct({ name: '', description: '', price: '', quantity: '' });
-      }
-      fetchProducts();
-    } catch (err) {
-      setError('Failed to save product.');
-      console.error('Error saving product:', err);
+  const handleClose = () => {
+    setOpen(false);
+    setCurrentProduct(null);
+  };
+
+  const handleSave = async () => {
+    if (currentProduct.id) {
+      await axios.put(`${PRODUCT_SERVICE_URL}/api/products/${currentProduct.id}`, currentProduct);
+    } else {
+      await axios.post(`${PRODUCT_SERVICE_URL}/api/products`, currentProduct);
     }
+    fetchProducts();
+    handleClose();
   };
 
   const handleDelete = async (id) => {
-    setError(null);
-    try {
-      await axios.delete(`${PRODUCT_SERVICE_URL}/api/products/${id}`);
-      fetchProducts();
-    } catch (err) {
-      setError('Failed to delete product.');
-      console.error('Error deleting product:', err);
-    }
-  };
-
-  const startEditing = (product) => {
-    setEditingProduct({ ...product });
-  };
-
-  const cancelEditing = () => {
-    setEditingProduct(null);
+    await axios.delete(`${PRODUCT_SERVICE_URL}/api/products/${id}`);
+    fetchProducts();
   };
 
   return (
-    <div>
-      <h2>Product Management</h2>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+    <Container>
+      <Typography variant="h4" gutterBottom sx={{ mt: 4 }}>
+        Product Management
+      </Typography>
+      <Button variant="contained" onClick={() => handleClickOpen({ name: '', description: '', price: '', quantity: '' })}>
+        Add Product
+      </Button>
+      <TableContainer component={Paper} sx={{ mt: 4 }}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>Name</TableCell>
+              <TableCell>Description</TableCell>
+              <TableCell>Price</TableCell>
+              <TableCell>Quantity</TableCell>
+              <TableCell>Actions</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {products.map((product) => (
+              <TableRow key={product.id}>
+                <TableCell>{product.name}</TableCell>
+                <TableCell>{product.description}</TableCell>
+                <TableCell>${product.price}</TableCell>
+                <TableCell>{product.quantity}</TableCell>
+                <TableCell>
+                  <IconButton onClick={() => handleClickOpen(product)}><Edit /></IconButton>
+                  <IconButton onClick={() => handleDelete(product.id)}><Delete /></IconButton>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
 
-      <h3>{editingProduct ? 'Edit Product' : 'Add New Product'}</h3>
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label>Name:</label>
-          <input
+      <Dialog open={open} onClose={handleClose}>
+        <DialogTitle>{currentProduct?.id ? 'Edit Product' : 'Add Product'}</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Name"
             type="text"
-            name="name"
-            value={editingProduct ? editingProduct.name : newProduct.name}
-            onChange={handleChange}
-            required
+            fullWidth
+            value={currentProduct?.name || ''}
+            onChange={(e) => setCurrentProduct({ ...currentProduct, name: e.target.value })}
           />
-        </div>
-        <div>
-          <label>Description:</label>
-          <textarea
-            name="description"
-            value={editingProduct ? editingProduct.description : newProduct.description}
-            onChange={handleChange}
-            required
+          <TextField
+            margin="dense"
+            label="Description"
+            type="text"
+            fullWidth
+            value={currentProduct?.description || ''}
+            onChange={(e) => setCurrentProduct({ ...currentProduct, description: e.target.value })}
           />
-        </div>
-        <div>
-          <label>Price:</label>
-          <input
+          <TextField
+            margin="dense"
+            label="Price"
             type="number"
-            name="price"
-            value={editingProduct ? editingProduct.price : newProduct.price}
-            onChange={handleChange}
-            required
+            fullWidth
+            value={currentProduct?.price || ''}
+            onChange={(e) => setCurrentProduct({ ...currentProduct, price: e.target.value })}
           />
-        </div>
-        <div>
-          <label>Quantity:</label>
-          <input
+          <TextField
+            margin="dense"
+            label="Quantity"
             type="number"
-            name="quantity"
-            value={editingProduct ? editingProduct.quantity : newProduct.quantity}
-            onChange={handleChange}
-            required
+            fullWidth
+            value={currentProduct?.quantity || ''}
+            onChange={(e) => setCurrentProduct({ ...currentProduct, quantity: e.target.value })}
           />
-        </div>
-        <button type="submit">{editingProduct ? 'Update Product' : 'Add Product'}</button>
-        {editingProduct && <button type="button" onClick={cancelEditing}>Cancel</button>}
-      </form>
-
-      <h3>Existing Products</h3>
-      {products.length === 0 ? (
-        <p>No products found.</p>
-      ) : (
-        <div className="product-list">
-          {products.map((product) => (
-            <div key={product.id} className="product-item">
-              <h4>{product.name}</h4>
-              <p>{product.description}</p>
-              <p>Price: ${product.price}</p>
-              <p>Quantity: {product.quantity}</p>
-              <button onClick={() => startEditing(product)}>Edit</button>
-              <button onClick={() => handleDelete(product.id)}>Delete</button>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleClose}>Cancel</Button>
+          <Button onClick={handleSave}>Save</Button>
+        </DialogActions>
+      </Dialog>
+    </Container>
   );
 };
 

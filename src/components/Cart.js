@@ -1,46 +1,89 @@
+
 import React from 'react';
-import { useCart } from '../context/CartContext';
+import { useSelector, useDispatch } from 'react-redux';
+import { removeFromCart, updateQuantity } from '../store/slices/cartSlice';
+import { Container, Grid, Card, CardContent, CardMedia, Typography, Button, Box, IconButton, TextField } from '@mui/material';
 import { Link } from 'react-router-dom';
+import DeleteIcon from '@mui/icons-material/Delete';
 
 const Cart = () => {
-  const { cartItems, removeFromCart, updateQuantity, clearCart, getTotalItems, getTotalPrice } = useCart();
+  const dispatch = useDispatch();
+  const { items } = useSelector((state) => state.cart);
+
+  const handleRemoveFromCart = (id) => {
+    dispatch(removeFromCart(id));
+  };
+
+  const handleUpdateQuantity = (id, quantity) => {
+    dispatch(updateQuantity({ id, quantity }));
+  };
+
+  const getTotalPrice = () => {
+    return items.reduce((total, item) => total + item.price * item.quantity, 0).toFixed(2);
+  };
 
   return (
-    <div>
-      <h1>Shopping Cart</h1>
-      {cartItems.length === 0 ? (
-        <p>Your cart is empty.</p>
+    <Container>
+      <Typography variant="h4" gutterBottom sx={{ mt: 4 }}>
+        Shopping Cart
+      </Typography>
+      {items.length === 0 ? (
+        <Typography variant="h6">Your cart is empty.</Typography>
       ) : (
-        <div>
-          <div className="cart-items">
-            {cartItems.map((item) => (
-              <div key={item.id} className="cart-item">
-                <h3>{item.name}</h3>
-                <p>Price: ${item.price}</p>
-                <p>
-                  Quantity:
-                  <input
-                    type="number"
-                    min="1"
-                    value={item.quantity}
-                    onChange={(e) => updateQuantity(item.id, parseInt(e.target.value))}
-                  />
-                </p>
-                <button onClick={() => removeFromCart(item.id)}>Remove</button>
-              </div>
+        <Grid container spacing={4}>
+          <Grid item xs={12} md={8}>
+            {items.map((item) => (
+              <Card key={item.id} sx={{ display: 'flex', mb: 2 }}>
+                <CardMedia
+                  component="img"
+                  sx={{ width: 151 }}
+                  image={`https://via.placeholder.com/151?text=${item.name}`}
+                  alt={item.name}
+                />
+                <Box sx={{ display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
+                  <CardContent>
+                    <Typography component="div" variant="h5">
+                      {item.name}
+                    </Typography>
+                    <Typography variant="subtitle1" color="text.secondary" component="div">
+                      ${item.price}
+                    </Typography>
+                  </CardContent>
+                  <Box sx={{ display: 'flex', alignItems: 'center', pl: 1, pb: 1 }}>
+                    <TextField
+                      type="number"
+                      label="Quantity"
+                      value={item.quantity}
+                      onChange={(e) => handleUpdateQuantity(item.id, parseInt(e.target.value))}
+                      inputProps={{ min: 1 }}
+                      sx={{ width: 80, mr: 2 }}
+                    />
+                    <IconButton onClick={() => handleRemoveFromCart(item.id)}>
+                      <DeleteIcon />
+                    </IconButton>
+                  </Box>
+                </Box>
+              </Card>
             ))}
-          </div>
-          <div className="cart-summary">
-            <p>Total Items: {getTotalItems()}</p>
-            <p>Total Price: ${getTotalPrice()}</p>
-            <button onClick={clearCart}>Clear Cart</button>
-            <Link to="/checkout">
-              <button>Proceed to Checkout</button>
-            </Link>
-          </div>
-        </div>
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <Card>
+              <CardContent>
+                <Typography variant="h5" gutterBottom>
+                  Cart Summary
+                </Typography>
+                <Typography variant="h6">
+                  Total: ${getTotalPrice()}
+                </Typography>
+                <Button component={Link} to="/checkout" variant="contained" sx={{ mt: 2 }} fullWidth>
+                  Proceed to Checkout
+                </Button>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
       )}
-    </div>
+    </Container>
   );
 };
 

@@ -1,79 +1,91 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { getOrdersStart, getOrdersSuccess, getOrdersFailure } from '../store/slices/orderSlice';
 import axios from 'axios';
+import { 
+  Container, 
+  Typography, 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableContainer, 
+  TableHead, 
+  TableRow, 
+  Paper, 
+  Select, 
+  MenuItem 
+} from '@mui/material';
 
 const OrderManagement = () => {
-  const [orders, setOrders] = useState([]);
-  const [error, setError] = useState(null);
+  const dispatch = useDispatch();
+  const { orders, loading, error } = useSelector((state) => state.orders);
 
   const ORDER_SERVICE_URL = process.env.REACT_APP_ORDER_SERVICE_URL || 'http://localhost:8083';
 
   const fetchOrders = async () => {
+    dispatch(getOrdersStart());
     try {
       const response = await axios.get(`${ORDER_SERVICE_URL}/api/orders`);
-      setOrders(response.data);
+      dispatch(getOrdersSuccess(response.data));
     } catch (err) {
-      setError('Failed to fetch orders.');
-      console.error('Error fetching orders:', err);
+      dispatch(getOrdersFailure('Failed to fetch orders.'));
     }
   };
 
   useEffect(() => {
     fetchOrders();
-  }, []);
+  }, [dispatch]);
 
   const handleUpdateStatus = async (orderId, newStatus) => {
-    setError(null);
     try {
       await axios.put(`${ORDER_SERVICE_URL}/api/orders/${orderId}/status`, { status: newStatus });
-      fetchOrders(); // Refresh the list after update
+      fetchOrders();
     } catch (err) {
-      setError('Failed to update order status.');
       console.error('Error updating order status:', err);
     }
   };
 
   return (
-    <div>
-      <h2>Order Management</h2>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-
-      <h3>All Orders</h3>
-      {orders.length === 0 ? (
-        <p>No orders found.</p>
-      ) : (
-        <div className="order-list">
-          {orders.map((order) => (
-            <div key={order.id} className="order-item">
-              <h4>Order ID: {order.id}</h4>
-              <p>User ID: {order.userId}</p>
-              <p>Total Amount: ${order.totalAmount}</p>
-              <p>Shipping Address: {order.shippingAddress}</p>
-              <p>
-                Status:
-                <select
-                  value={order.status}
-                  onChange={(e) => handleUpdateStatus(order.id, e.target.value)}
-                >
-                  <option value="PENDING">PENDING</option>
-                  <option value="PROCESSING">PROCESSING</option>
-                  <option value="SHIPPED">SHIPPED</option>
-                  <option value="DELIVERED">DELIVERED</option>
-                  <option value="CANCELLED">CANCELLED</option>
-                </select>
-              </p>
-              <h5>Items:</h5>
-              <ul>
-                {order.orderItems.map((item) => (
-                  <li key={item.id}>
-                    Product ID: {item.productId}, Quantity: {item.quantity}, Price: ${item.price}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
+    <Container>
+      <Typography variant="h4" gutterBottom sx={{ mt: 4 }}>
+        Order Management
+      </Typography>
+      <TableContainer component={Paper} sx={{ mt: 4 }}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>Order ID</TableCell>
+              <TableCell>User ID</TableCell>
+              <TableCell>Total Amount</TableCell>
+              <TableCell>Shipping Address</TableCell>
+              <TableCell>Status</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {orders.map((order) => (
+              <TableRow key={order.id}>
+                <TableCell>{order.id}</TableCell>
+                <TableCell>{order.userId}</TableCell>
+                <TableCell>${order.totalAmount}</TableCell>
+                <TableCell>{order.shippingAddress}</TableCell>
+                <TableCell>
+                  <Select
+                    value={order.status}
+                    onChange={(e) => handleUpdateStatus(order.id, e.target.value)}
+                  >
+                    <MenuItem value="PENDING">PENDING</MenuItem>
+                    <MenuItem value="PROCESSING">PROCESSING</MenuItem>
+                    <MenuItem value="SHIPPED">SHIPPED</MenuItem>
+                    <MenuItem value="DELIVERED">DELIVERED</MenuItem>
+                    <MenuItem value="CANCELLED">CANCELLED</MenuItem>
+                  </Select>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+    </Container>
   );
 };
 

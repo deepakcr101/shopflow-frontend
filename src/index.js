@@ -1,19 +1,24 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import './index.css';
+import { Provider } from 'react-redux';
+import { ThemeProvider } from '@mui/material/styles';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import store from './store';
+import theme from './theme';
 import App from './App';
+import './index.css';
 import reportWebVitals from './reportWebVitals';
-import { CartProvider } from './context/CartContext';
-import { AuthProvider } from './context/AuthContext';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    <AuthProvider>
-      <CartProvider>
+    <Provider store={store}>
+      <ThemeProvider theme={theme}>
         <App />
-      </CartProvider>
-    </AuthProvider>
+        <ToastContainer />
+      </ThemeProvider>
+    </Provider>
   </React.StrictMode>
 );
 
