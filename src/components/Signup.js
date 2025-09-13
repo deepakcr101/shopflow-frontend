@@ -14,7 +14,7 @@ const Signup = () => {
   const navigate = useNavigate();
   const { loading, error } = useSelector((state) => state.auth);
 
-  const AUTH_SERVICE_URL = process.env.REACT_APP_AUTH_SERVICE_URL || 'http://localhost:8080';
+  const AUTH_SERVICE_URL = process.env.REACT_APP_AUTH_SERVICE_URL || 'http://localhost:8081';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
