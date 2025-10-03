@@ -34,18 +34,20 @@ const ProductList = () => {
     dispatch(addToCartSuccess(product));
   };
 
-  const filteredProducts = products
-    .filter((product) =>
-      product.name.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-    .sort((a, b) => {
-      if (sortBy === 'name') {
-        return a.name.localeCompare(b.name);
-      } else if (sortBy === 'price') {
-        return a.price - b.price;
-      }
-      return 0;
-    });
+  const filteredProducts = Array.isArray(products)
+    ? products
+        .filter((product) =>
+          product.name.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+        .sort((a, b) => {
+          if (sortBy === 'name') {
+            return a.name.localeCompare(b.name);
+          } else if (sortBy === 'price') {
+            return a.price - b.price;
+          }
+          return 0;
+        })
+    : [];
 
   if (loading) {
     return <CircularProgress />;
